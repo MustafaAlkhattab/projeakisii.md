@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fraud Shield AI — Dolandırıcılık Tespit Sistemi</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  /* ═══════════════════════════════════════════════
+     RESET & CUSTOM PROPERTIES
+  ═══════════════════════════════════════════════ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-void:    #020409;
+    --bg-deep:    #040910;
+    --bg-panel:   #070e1c;
+    --bg-card:    #0a1628;
+    --bg-lift:    #0f1e35;
+    --border:     rgba(30,80,160,0.25);
+    --border-hot: rgba(60,140,255,0.5);
+
+    --blue-dim:   #1a3a6e;
+    --blue-mid:   #2563eb;
+    --blue-hot:   #3b82f6;
+    --blue-glow:  #60a5fa;
+    --cyan:       #06b6d4;
+    --violet:     #7c3aed;
+    --violet-glow:#a78bfa;
+    --red-hot:    #ef4444;
+    --red-glow:   #f87171;
+    --amber:      #f59e0b;
+    --green:      #10b981;
+    --green-glow: #34d399;
+
+    --text-primary:   #e8f0ff;
+    --text-secondary: rgba(180,210,255,0.6);
+    --text-muted:     rgba(120,160,220,0.4);
+
+    --font-display: 'Syne', sans-serif;
+    --font-mono:    'Space Mono', monospace;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 22px;
+
+    --sidebar-w: 240px;
+    --transition: 0.22s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    min-height: 100vh;
+    display: flex;
+    overflow-x: hidden;
+  }
+
+  /* ═══════════════════════════════════════════════
+     BACKGROUND GRID OVERLAY
+  ═══════════════════════════════════════════════ */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(37,99,235,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,99,235,0.035) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ═══════════════════════════════════════════════
+     SIDEBAR
+  ═══════════════════════════════════════════════ */
+  .sidebar {
+    width: var(--sidebar-w);
+    min-height: 100vh;
+    background: var(--bg-deep);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .sidebar::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 1px; height: 100%;
+    background: linear-gradient(180deg, transparent, var(--blue-mid), transparent);
+    opacity: 0.4;
+  }
+
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-shield {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--blue-mid), var(--violet));
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .logo-shield::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: calc(var(--radius-md) + 1px);
+    background: linear-gradient(135deg, var(--blue-hot), var(--violet-glow));
+    z-index: -1;
+    opacity: 0.6;
+  }
+
+  .logo-text { line-height: 1.2; }
+  .logo-text strong { display: block; font-size: 14px; font-weight: 800; letter-spacing: 0.5px; }
+  .logo-text span { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 1px; }
+
+  .sidebar-user {
+    margin: 16px 14px 8px;
+    background: rgba(37,99,235,0.08);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .user-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue-mid), var(--violet));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+
+  .user-info strong { display: block; font-size: 12px; font-weight: 600; }
+  .user-info span { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); }
+
+  .nav-section-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 14px 20px 6px;
+    font-family: var(--font-mono);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px 9px 20px;
+    margin: 2px 8px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all var(--transition);
+    border: 1px solid transparent;
+    position: relative;
+    user-select: none;
+  }
+
+  .nav-item:hover {
+    background: rgba(37,99,235,0.1);
+    border-color: rgba(37,99,235,0.2);
+    color: var(--text-primary);
+    transform: translateX(3px);
+  }
+
+  .nav-item.active {
+    background: rgba(37,99,235,0.15);
+    border-color: rgba(37,99,235,0.35);
+    color: var(--blue-glow);
+  }
+
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 25%; bottom: 25%;
+    width: 3px;
+    background: var(--blue-hot);
+    border-radius: 0 3px 3px 0;
+  }
+
+  .nav-icon { font-size: 15px; opacity: 0.8; width: 18px; text-align: center; }
+
+  .sidebar-status {
+    margin: auto 14px 14px;
+    background: rgba(16,185,129,0.07);
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    display: inline-block;
+    margin-right: 7px;
+    animation: pulse-green 2s infinite;
+  }
+
+  @keyframes pulse-green {
+    0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+    50%      { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+  }
+
+  .status-label { font-size: 11px; color: var(--green-glow); font-weight: 600; font-family: var(--font-mono); }
+  .status-score { font-size: 24px; font-weight: 800; color: var(--green-glow); letter-spacing: -1px; margin-top: 4px; }
+  .status-bar { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .status-bar-fill { height: 100%; width: 96.8%; background: var(--green); border-radius: 2px; }
+  .status-meta { font-size: 10px; color: var(--text-muted); margin-top: 5px; font-family: var(--font-mono); }
+
+  .sidebar-logout {
+    margin: 0 14px 18px;
+    padding: 8px 14px;
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.15);
+    border-radius: var(--radius-md);
+    color: rgba(239,68,68,0.7);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all var(--transition);
+    font-family: var(--font-mono);
+  }
+
+  .sidebar-logout:hover {
+    background: rgba(239,68,68,0.12);
+    border-color: rgba(239,68,68,0.3);
+    color: var(--red-glow);
+  }
+
+  /* ═══════════════════════════════════════════════
+     MAIN CONTENT
+  ═══════════════════════════════════════════════ */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    padding: 18px 32px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(4,9,16,0.6);
+    backdrop-filter: blur(10px);
+    position: sticky; top: 0;
+    z-index: 50;
+  }
+
+  .topbar-breadcrumb { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 1px; }
+  .topbar-breadcrumb span { color: var(--blue-hot); }
+
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+  .topbar-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(37,99,235,0.12);
+    border: 1px solid var(--border);
+    color: var(--blue-glow);
+    letter-spacing: 0.5px;
+  }
+
+  .topbar-time {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ═══════════════════════════════════════════════
+     PAGES
+  ═══════════════════════════════════════════════ */
+  .page { display: none; padding: 28px 32px 48px; animation: fadeUp 0.4s ease-out; }
+  .page.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .page-header { margin-bottom: 24px; }
+  .page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+  .page-title span { color: var(--blue-glow); }
+  .page-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); letter-spacing: 0.5px; }
+
+  /* ═══════════════════════════════════════════════
+     METRIC CARDS
+  ═══════════════════════════════════════════════ */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition);
+    cursor: default;
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .metric-card.blue::before  { background: linear-gradient(90deg, var(--blue-mid), var(--blue-hot)); }
+  .metric-card.red::before   { background: linear-gradient(90deg, #b91c1c, var(--red-hot)); }
+  .metric-card.green::before { background: linear-gradient(90deg, #059669, var(--green)); }
+  .metric-card.violet::before{ background: linear-gradient(90deg, #6d28d9, var(--violet)); }
+
+  .metric-card:hover {
+    border-color: var(--border-hot);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(37,99,235,0.12);
+  }
+
+  .metric-icon {
+    font-size: 20px;
+    margin-bottom: 12px;
+    opacity: 0.85;
+  }
+
+  .metric-value {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+    font-family: var(--font-mono);
+  }
+
+  .metric-card.blue   .metric-value { color: var(--blue-glow); }
+  .metric-card.red    .metric-value { color: var(--red-glow); }
+  .metric-card.green  .metric-value { color: var(--green-glow); }
+  .metric-card.violet .metric-value { color: var(--violet-glow); }
+
+  .metric-label { font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; font-family: var(--font-mono); }
+
+  .metric-delta {
+    position: absolute;
+    bottom: 16px; right: 16px;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .delta-up   { background: rgba(16,185,129,0.12); color: var(--green-glow); border: 1px solid rgba(16,185,129,0.2); }
+  .delta-down { background: rgba(239,68,68,0.12);  color: var(--red-glow);   border: 1px solid rgba(239,68,68,0.2); }
+
+  /* ═══════════════════════════════════════════════
+     CHARTS GRID
+  ═══════════════════════════════════════════════ */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .charts-row-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    transition: border-color var(--transition);
+  }
+
+  .chart-card:hover { border-color: rgba(37,99,235,0.35); }
+
+  .chart-header { margin-bottom: 16px; }
+  .chart-title { font-size: 13px; font-weight: 700; letter-spacing: 0.3px; }
+  .chart-subtitle { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-family: var(--font-mono); }
+
+  .chart-canvas-wrap { position: relative; }
+
+  /* ═══════════════════════════════════════════════
+     TRANSACTIONS TABLE
+  ═══════════════════════════════════════════════ */
+  .table-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .table-title { font-size: 13px; font-weight: 700; }
+
+  .table-filter {
+    display: flex;
+    gap: 6px;
+  }
+
+  .filter-btn {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    background: rgba(37,99,235,0.12);
+    border-color: var(--border-hot);
+    color: var(--blue-glow);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  th {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    padding: 10px 20px;
+    text-align: left;
+    font-family: var(--font-mono);
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+
+  td {
+    padding: 12px 20px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(30,80,160,0.1);
+    transition: background var(--transition);
+    font-family: var(--font-mono);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr:hover td { background: rgba(37,99,235,0.04); }
+
+  .badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-family: var(--font-mono);
+  }
+
+  .badge-fraud  { background: rgba(239,68,68,0.12);  color: var(--red-glow);   border: 1px solid rgba(239,68,68,0.25); }
+  .badge-safe   { background: rgba(16,185,129,0.12); color: var(--green-glow); border: 1px solid rgba(16,185,129,0.25); }
+  .badge-review { background: rgba(245,158,11,0.12); color: #fbbf24;           border: 1px solid rgba(245,158,11,0.25); }
+
+  .risk-bar { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; width: 80px; overflow: hidden; }
+  .risk-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+  /* ═══════════════════════════════════════════════
+     PREDICTION FORM
+  ═══════════════════════════════════════════════ */
+  .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+  .form-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .form-input, .form-select {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 13px;
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    transition: all var(--transition);
+    outline: none;
+    width: 100%;
+  }
+
+  .form-input:focus, .form-select:focus {
+    border-color: var(--blue-hot);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  }
+
+  .form-select { appearance: none; cursor: pointer; }
+
+  .form-input::placeholder { color: var(--text-muted); }
+
+  .btn-predict {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--blue-mid), var(--violet));
+    border: none;
+    border-radius: var(--radius-md);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font-display);
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-predict::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--blue-hot), var(--violet-glow));
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+
+  .btn-predict:hover::before { opacity: 1; }
+  .btn-predict:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(37,99,235,0.3); }
+  .btn-predict:active { transform: translateY(0); }
+
+  .btn-predict span { position: relative; z-index: 1; }
+
+  /* ═══════════════════════════════════════════════
+     PREDICTION RESULT
+  ═══════════════════════════════════════════════ */
+  .result-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-top: 20px;
+    display: none;
+    animation: fadeUp 0.5s ease-out;
+  }
+
+  .result-panel.show { display: block; }
+
+  .result-fraud {
+    border-color: rgba(239,68,68,0.35);
+    background: rgba(239,68,68,0.04);
+    animation: pulse-red 2s infinite;
+  }
+
+  .result-safe {
+    border-color: rgba(16,185,129,0.35);
+    background: rgba(16,185,129,0.04);
+    animation: pulse-green-border 2s infinite;
+  }
+
+  @keyframes pulse-red {
+    0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.2); }
+    50%      { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+  }
+
+  @keyframes pulse-green-border {
+    0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.2); }
+    50%      { box-shadow: 0 0 0 12px rgba(16,185,129,0); }
+  }
+
+  .result-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .result-icon { font-size: 40px; }
+  .result-title { font-size: 22px; font-weight: 800; }
+  .result-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; font-family: var(--font-mono); }
+
+  .result-meter { margin-bottom: 20px; }
+  .meter-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-bottom: 6px; }
+  .meter-track { height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+  .meter-fill { height: 100%; border-radius: 4px; transition: width 1.5s cubic-bezier(0.16,1,0.3,1); }
+
+  .result-factors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+  .factor-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    font-size: 12px;
+  }
+
+  .factor-name { color: var(--text-muted); font-family: var(--font-mono); font-size: 10px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.8px; }
+  .factor-value { font-weight: 700; }
+
+  /* ═══════════════════════════════════════════════
+     LOADING ANIMATION
+  ═══════════════════════════════════════════════ */
+  .loading-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  .loading-bar.active { display: block; }
+
+  .loading-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue-mid), var(--violet), var(--blue-hot));
+    border-radius: 2px;
+    background-size: 200% 100%;
+    animation: shimmer 1.2s linear infinite;
+    width: 0%;
+    transition: width 2s ease;
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ═══════════════════════════════════════════════
+     SCANLINE DECORATIONS
+  ═══════════════════════════════════════════════ */
+  .scanline-deco {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    opacity: 0.5;
+    margin-bottom: 8px;
+  }
+
+  /* ═══════════════════════════════════════════════
+     COUNTRY ANALYSIS BARS
+  ═══════════════════════════════════════════════ */
+  .country-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .country-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+  }
+
+  .country-name { width: 80px; color: var(--text-secondary); font-size: 11px; }
+  .country-track { flex: 1; height: 5px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+  .country-fill { height: 100%; border-radius: 3px; }
+  .country-count { width: 32px; text-align: right; color: var(--text-muted); font-size: 10px; }
+
+  /* ═══════════════════════════════════════════════
+     RESPONSIVE
+  ═══════════════════════════════════════════════ */
+  @media (max-width: 1200px) {
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    .form-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 900px) {
+    :root { --sidebar-w: 0px; }
+    .sidebar { transform: translateX(-100%); }
+    .charts-row { grid-template-columns: 1fr; }
+    .charts-row-3 { grid-template-columns: 1fr; }
+    .result-factors { grid-template-columns: 1fr; }
+  }
+
+  /* ═══════════════════════════════════════════════
+     SCROLLBAR
+  ═══════════════════════════════════════════════ */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-void); }
+  ::-webkit-scrollbar-thumb { background: var(--blue-dim); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--blue-mid); }
+
+  /* ═══════════════════════════════════════════════
+     CORNER BRACKET DECORATION
+  ═══════════════════════════════════════════════ */
+  .bracket-deco {
+    position: relative;
+    padding: 2px 0;
+  }
+
+  .bracket-deco::before, .bracket-deco::after {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    opacity: 0.4;
+  }
+
+  .bracket-deco::before { content: '[ '; }
+  .bracket-deco::after  { content: ' ]'; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-shield">🛡️</div>
+    <div class="logo-text">
+      <strong>Fraud Shield</strong>
+      <span>AI v2.4.1</span>
+    </div>
+  </div>
+
+  <div class="sidebar-user">
+    <div class="user-avatar">AK</div>
+    <div class="user-info">
+      <strong>Ahmed Kannavi</strong>
+      <span>240541603</span>
+    </div>
+  </div>
+
+  <div class="nav-section-label">// NAVİGASYON</div>
+
+  <div class="nav-item active" onclick="showPage('dashboard', this)">
+    <span class="nav-icon">◈</span> Dashboard
+  </div>
+  <div class="nav-item" onclick="showPage('predict', this)">
+    <span class="nav-icon">⬡</span> Tahmin Yap
+  </div>
+  <div class="nav-item" onclick="showPage('analytics', this)">
+    <span class="nav-icon">◎</span> Analizler
+  </div>
+  <div class="nav-item" onclick="showPage('transactions', this)">
+    <span class="nav-icon">≋</span> İşlemler
+  </div>
+
+  <div class="sidebar-status">
+    <div style="display:flex;align-items:center;margin-bottom:8px;">
+      <span class="status-dot"></span>
+      <span class="status-label">MODEL AKTİF</span>
+    </div>
+    <div class="status-score">%96.8</div>
+    <div class="status-bar"><div class="status-bar-fill"></div></div>
+    <div class="status-meta" style="margin-top:6px;">Doğruluk · Lojistik Regresyon</div>
+  </div>
+
+  <div class="sidebar-logout" onclick="alert('Güvenli çıkış yapıldı.')">⏻ Çıkış Yap</div>
+</nav>
+
+<!-- ═══════════════════════════════════════
+     MAIN
+═══════════════════════════════════════ -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-breadcrumb">
+      FRAUD-SHIELD / <span id="current-page-label">DASHBOARD</span>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-badge">Fırat Üniversitesi · 2025-2026</span>
+      <span class="topbar-time" id="clock">--:--:--</span>
+    </div>
+  </div>
+
+  <!-- ═══ DASHBOARD PAGE ═══ -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div class="scanline-deco">// SİSTEM GÖSTERGESİ</div>
+      <h1 class="page-title">Ana <span>Dashboard</span></h1>
+      <p class="page-subtitle">Yapay zeka analiz özetleri · gerçek zamanlı metrikler</p>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-card blue">
+        <div class="metric-icon">💳</div>
+        <div class="metric-value" id="m-total">12,450</div>
+        <div class="metric-label">Toplam İşlem</div>
+        <div class="metric-delta delta-up">↑ +8.2%</div>
+      </div>
+      <div class="metric-card red">
+        <div class="metric-icon">🚨</div>
+        <div class="metric-value" id="m-fraud">342</div>
+        <div class="metric-label">Fraud İşlem</div>
+        <div class="metric-delta delta-down">▲ Kritik</div>
+      </div>
+      <div class="metric-card green">
+        <div class="metric-icon">✅</div>
+        <div class="metric-value" id="m-safe">12,108</div>
+        <div class="metric-label">Güvenli İşlem</div>
+        <div class="metric-delta delta-up">↑ Normal</div>
+      </div>
+      <div class="metric-card violet">
+        <div class="metric-icon">🎯</div>
+        <div class="metric-value" id="m-rate">%2.75</div>
+        <div class="metric-label">Risk Oranı</div>
+        <div class="metric-delta delta-down">▼ -0.3%</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">📈 Son 7 Gün — İşlem Trendi</div>
+          <div class="chart-subtitle">Normal vs Fraud karşılaştırması</div>
+        </div>
+        <div class="chart-canvas-wrap"><canvas id="lineChart" height="180"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">🛡️ Risk Dağılımı</div>
+          <div class="chart-subtitle">İşlem güvenlik kategorileri</div>
+        </div>
+        <div class="chart-canvas-wrap"><canvas id="pieChart" height="180"></canvas></div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">⚡ Son İşlemler</div>
+        <div class="table-filter">
+          <button class="filter-btn active">Tümü</button>
+          <button class="filter-btn">Fraud</button>
+          <button class="filter-btn">Güvenli</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>İşlem ID</th>
+            <th>Tutar</th>
+            <th>Ülke</th>
+            <th>Zaman</th>
+            <th>Risk Skoru</th>
+            <th>Durum</th>
+          </tr>
+        </thead>
+        <tbody id="transactions-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ PREDICT PAGE ═══ -->
+  <div class="page" id="page-predict">
+    <div class="page-header">
+      <div class="scanline-deco">// TAHMİN MOTORU</div>
+      <h1 class="page-title">İşlem <span>Analiz</span></h1>
+      <p class="page-subtitle">İşlem bilgilerini girin · AI modeli sonucu hesaplasın</p>
+    </div>
+
+    <div class="chart-card">
+      <div class="loading-bar" id="loading-bar">
+        <div class="loading-fill" id="loading-fill"></div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">İşlem Tutarı (₺)</label>
+          <input type="number" class="form-input" id="f-amount" placeholder="0.00" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">İşlem Zamanı (Saniye)</label>
+         <input type="time" class="form-input" id="f-time" value="12:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kart Tipi</label>
+          <select class="form-select" id="f-card">
+            <option value="credit">Kredi Kartı</option>
+            <option value="debit">Banka Kartı</option>
+            <option value="prepaid">Ön Ödemeli</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ülke</label>
+          <select class="form-select" id="f-country">
+            <option value="TR">Türkiye</option>
+            <option value="RU">Rusya</option>
+            <option value="NG">Nijerya</option>
+            <option value="US">ABD</option>
+            <option value="DE">Almanya</option>
+            <option value="CN">Çin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cihaz Tipi</label>
+          <select class="form-select" id="f-device">
+            <option value="mobile">Mobil</option>
+            <option value="desktop">Masaüstü</option>
+            <option value="pos">POS Terminali</option>
+            <option value="unknown">Bilinmiyor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ödeme Yöntemi</label>
+          <select class="form-select" id="f-payment">
+            <option value="online">Online Alışveriş</option>
+            <option value="atm">ATM</option>
+            <option value="pos">POS</option>
+            <option value="transfer">Havale/EFT</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="button" class="btn-predict" onclick="runPrediction(event)">
+        <span>🔬 Yapay Zeka Analizi Başlat</span>
+      </button>
+    </div>
+
+    <div class="result-panel" id="result-panel">
+      <div class="result-header">
+        <div class="result-icon" id="r-icon">—</div>
+        <div>
+          <div class="result-title" id="r-title">—</div>
+          <div class="result-desc" id="r-desc">—</div>
+        </div>
+        <div style="margin-left:auto;">
+          <span class="badge" id="r-badge">—</span>
+        </div>
+      </div>
+
+      <div class="result-meter">
+        <div class="meter-label">
+          <span>Dolandırıcılık Olasılığı</span>
+          <span id="r-percent">—</span>
+        </div>
+        <div class="meter-track">
+          <div class="meter-fill" id="r-meter" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="result-factors">
+        <div class="factor-card">
+          <div class="factor-name">Tutar Riski</div>
+          <div class="factor-value" id="rf-amount">—</div>
+        </div>
+        <div class="factor-card">
+          <div class="factor-name">Lokasyon Riski</div>
+          <div class="factor-value" id="rf-country">—</div>
+        </div>
+        <div class="factor-card">
+          <div class="factor-name">Zaman Riski</div>
+          <div class="factor-value" id="rf-time">—</div>
+        </div>
+        <div class="factor-card">
+          <div class="factor-name">Cihaz Riski</div>
+          <div class="factor-value" id="rf-device">—</div>
+        </div>
+        <div class="factor-card">
+          <div class="factor-name">Ödeme Kanalı</div>
+          <div class="factor-value" id="rf-payment">—</div>
+        </div>
+        <div class="factor-card">
+          <div class="factor-name">Model Güveni</div>
+          <div class="factor-value" id="rf-conf">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ANALYTICS PAGE ═══ -->
+  <div class="page" id="page-analytics">
+    <div class="page-header">
+      <div class="scanline-deco">// ANALİTİK PANELİ</div>
+      <h1 class="page-title">Veri <span>Analizleri</span></h1>
+      <p class="page-subtitle">Haftalık fraud grafikleri · ülke analizi · risk skorları</p>
+    </div>
+
+    <div class="charts-row-3">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">📊 Haftalık Fraud Bar</div>
+          <div class="chart-subtitle">Son 7 gün fraud sayısı</div>
+        </div>
+        <canvas id="barChart" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">📉 Risk Skoru Trendi</div>
+          <div class="chart-subtitle">Anlık risk dalgalanması</div>
+        </div>
+        <canvas id="riskChart" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">🌍 Ülke Analizi</div>
+          <div class="chart-subtitle">Fraud kaynaklarına göre</div>
+        </div>
+        <div class="country-list" id="country-list"></div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">📐 Confusion Matrix Özeti</div>
+          <div class="chart-subtitle">Model performans değerlendirmesi</div>
+        </div>
+        <canvas id="confChart" height="160"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">⚙️ Özellik Önemi</div>
+          <div class="chart-subtitle">Hangi faktörler en belirleyici?</div>
+        </div>
+        <canvas id="featureChart" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TRANSACTIONS PAGE ═══ -->
+  <div class="page" id="page-transactions">
+    <div class="page-header">
+      <div class="scanline-deco">// İŞLEM LOGU</div>
+      <h1 class="page-title">Tüm <span>İşlemler</span></h1>
+      <p class="page-subtitle">Veri seti örnekleri · detaylı işlem kayıtları</p>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">İşlem Veritabanı — <span style="color:var(--blue-glow);font-family:var(--font-mono);" id="tx-count">0</span> kayıt</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);">creditcard_fraud.csv</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Tutar</th>
+            <th>Zaman</th>
+            <th>Lokasyon Skoru</th>
+            <th>Model Tahmini</th>
+            <th>Gerçek Etiket</th>
+          </tr>
+        </thead>
+        <tbody id="full-tx-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══════════════════════════════════════
+     JAVASCRIPT DATA + LOGIC
+═══════════════════════════════════════ -->
+<script>
+// ──────────────────────────────────────
+// 1. ÖRNEK VERİ ARRAYLARI
+// ──────────────────────────────────────
+
+const transactions = [
+  { id:"#TRX-9982", amount:15800, country:"Rusya",    time:"02:45", risk:98, status:"fraud" },
+  { id:"#TRX-9901", amount:8450,  country:"Nijerya",  time:"01:18", risk:76, status:"review" },
+  { id:"#TRX-9845", amount:2300,  country:"Türkiye",  time:"00:54", risk:12, status:"safe" },
+  { id:"#TRX-9810", amount:550,   country:"Almanya",  time:"00:31", risk:8,  status:"safe" },
+  { id:"#TRX-9790", amount:45000, country:"Bilinmiyor",time:"dün",  risk:97, status:"fraud" },
+  { id:"#TRX-9754", amount:3200,  country:"Türkiye",  time:"dün",  risk:18, status:"safe" },
+  { id:"#TRX-9721", amount:12000, country:"Çin",      time:"dün",  risk:88, status:"fraud" },
+];
+
+const fraudStats = {
+  total: 12450,
+  fraud: 342,
+  safe:  12108,
+  rate:  2.75,
+  prevented_loss: 1200000,
+  accuracy: 96.8
+};
+
+const weeklyData = [
+  { day:"Pzt", fraud:28, normal:1680 },
+  { day:"Sal", fraud:35, normal:1720 },
+  { day:"Çar", fraud:22, normal:1540 },
+  { day:"Per", fraud:48, normal:1890 },
+  { day:"Cum", fraud:31, normal:2010 },
+  { day:"Cmt", fraud:19, normal:1430 },
+  { day:"Paz", fraud:42, normal:1180 },
+];
+
+const chartData = {
+  pieLabels: ["Güvenli (%97.3)", "İncelemede (%0.8)", "Fraud (%1.9)"],
+  pieValues: [97.3, 0.8, 1.9],
+  pieColors: ["#10b981", "#f59e0b", "#ef4444"]
+};
+
+const countries = [
+  { name:"Rusya",    count:87,  pct:85 },
+  { name:"Nijerya",  count:64,  pct:65 },
+  { name:"Çin",      count:52,  pct:52 },
+  { name:"Bilinmiyor",count:44, pct:44 },
+  { name:"ABD",      count:38,  pct:38 },
+  { name:"Türkiye",  count:19,  pct:20 },
+  { name:"Almanya",  count:12,  pct:12 },
+];
+
+const riskScores = [
+  12,45,89,23,67,91,34,78,56,92,41,15,83,29,71,
+  44,97,8,62,37,85,19,73,51,66,88,27,94,48,32
+];
+
+const csvData = [
+  { amount:15800, time:31551, loc:0.939, real:0, pred:0 },
+  { amount:865,   time:11394, loc:0.895, real:0, pred:0 },
+  { amount:5395,  time:69092, loc:0.598, real:0, pred:0 },
+  { amount:11969, time:3890,  loc:0.922, real:0, pred:0 },
+  { amount:11289, time:41606, loc:0.088, real:0, pred:0 },
+  { amount:6270,  time:80038, loc:0.196, real:0, pred:0 },
+  { amount:16855, time:10627, loc:0.045, real:1, pred:1 },
+  { amount:4431,  time:8792,  loc:0.325, real:0, pred:0 },
+  { amount:14428, time:73969, loc:0.389, real:0, pred:0 },
+];
+
+// ──────────────────────────────────────
+// 2. NAVİGASYON
+// ──────────────────────────────────────
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('current-page-label').textContent = name.toUpperCase();
+  if (name === 'analytics') setTimeout(buildAnalyticsCharts, 100);
+}
+
+// ──────────────────────────────────────
+// 3. SAAT
+// ──────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('tr-TR');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ──────────────────────────────────────
+// 4. DASHBOARD — SON İŞLEMLER
+// ──────────────────────────────────────
+function buildTransactionsTable() {
+  const tbody = document.getElementById('transactions-body');
+  tbody.innerHTML = transactions.map(tx => {
+    let badgeHtml, riskColor;
+    if (tx.status === 'fraud')        { badgeHtml = `<span class="badge badge-fraud">FRAUD</span>`;    riskColor = '#ef4444'; }
+    else if (tx.status === 'review')  { badgeHtml = `<span class="badge badge-review">İNCELEME</span>`; riskColor = '#f59e0b'; }
+    else                               { badgeHtml = `<span class="badge badge-safe">GÜVENLİ</span>`;   riskColor = '#10b981'; }
+
+    return `<tr>
+      <td style="color:var(--blue-glow);">${tx.id}</td>
+      <td style="font-weight:700;">₺${tx.amount.toLocaleString('tr-TR')}</td>
+      <td>${tx.country}</td>
+      <td style="color:var(--text-muted);">${tx.time}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="risk-bar"><div class="risk-fill" style="width:${tx.risk}%;background:${riskColor};"></div></div>
+          <span style="font-size:11px;color:${riskColor};">%${tx.risk}</span>
+        </div>
+      </td>
+      <td>${badgeHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ──────────────────────────────────────
+// 5. DASHBOARD — ÇİZELGELER
+// ──────────────────────────────────────
+const chartDefaults = {
+  plugins: { legend: { labels: { color: 'rgba(180,210,255,0.6)', font: { family: "'Space Mono'" }, boxWidth: 12, padding: 16 } } },
+  scales: {
+    x: { grid: { color: 'rgba(30,80,160,0.12)' }, ticks: { color: 'rgba(120,160,220,0.5)', font: { family: "'Space Mono'", size: 10 } } },
+    y: { grid: { color: 'rgba(30,80,160,0.12)' }, ticks: { color: 'rgba(120,160,220,0.5)', font: { family: "'Space Mono'", size: 10 } } },
+  }
+};
+
+function buildDashboardCharts() {
+  // Line chart
+  const lc = document.getElementById('lineChart').getContext('2d');
+  new Chart(lc, {
+    type: 'line',
+    data: {
+      labels: weeklyData.map(d => d.day),
+      datasets: [
+        {
+          label: 'Normal İşlem',
+          data: weeklyData.map(d => d.normal),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.06)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#10b981',
+          pointRadius: 4,
+        },
+        {
+          label: 'Fraud',
+          data: weeklyData.map(d => d.fraud),
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239,68,68,0.06)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#ef4444',
+          pointRadius: 4,
+        }
+      ]
+    },
+    options: { ...chartDefaults, responsive: true, plugins: { ...chartDefaults.plugins } }
+  });
+
+  // Pie chart
+  const pc = document.getElementById('pieChart').getContext('2d');
+  new Chart(pc, {
+    type: 'doughnut',
+    data: {
+      labels: chartData.pieLabels,
+      datasets: [{
+        data: chartData.pieValues,
+        backgroundColor: chartData.pieColors.map(c => c + 'cc'),
+        borderColor: chartData.pieColors,
+        borderWidth: 2,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '62%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: 'rgba(180,210,255,0.6)', font: { family: "'Space Mono'", size: 10 }, boxWidth: 10, padding: 12 }
+        }
+      }
+    }
+  });
+}
+
+// ──────────────────────────────────────
+// 6. ANALİTİK SAYFASI — ÇİZELGELER
+// ──────────────────────────────────────
+let analyticsBuilt = false;
+
+function buildAnalyticsCharts() {
+  if (analyticsBuilt) return;
+  analyticsBuilt = true;
+
+  // Bar chart — haftalık fraud
+  new Chart(document.getElementById('barChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: weeklyData.map(d => d.day),
+      datasets: [{
+        label: 'Fraud Sayısı',
+        data: weeklyData.map(d => d.fraud),
+        backgroundColor: weeklyData.map(d => d.fraud > 40 ? 'rgba(239,68,68,0.7)' : 'rgba(37,99,235,0.5)'),
+        borderColor:  weeklyData.map(d => d.fraud > 40 ? '#ef4444' : '#2563eb'),
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: { ...chartDefaults, responsive: true }
+  });
+
+  // Risk score line
+  new Chart(document.getElementById('riskChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: riskScores.map((_, i) => i + 1),
+      datasets: [{
+        label: 'Risk Skoru',
+        data: riskScores,
+        borderColor: '#7c3aed',
+        backgroundColor: 'rgba(124,58,237,0.08)',
+        fill: true,
+        tension: 0.5,
+        pointRadius: 2,
+        borderWidth: 2,
+      }]
+    },
+    options: { ...chartDefaults, responsive: true }
+  });
+
+  // Country list
+  const colors = ['#ef4444','#f59e0b','#3b82f6','#8b5cf6','#06b6d4','#10b981','#64748b'];
+  document.getElementById('country-list').innerHTML = countries.map((c, i) => `
+    <div class="country-row">
+      <span class="country-name">${c.name}</span>
+      <div class="country-track">
+        <div class="country-fill" style="width:${c.pct}%;background:${colors[i]};"></div>
+      </div>
+      <span class="country-count">${c.count}</span>
+    </div>
+  `).join('');
+
+  // Confusion Matrix visualization
+  new Chart(document.getElementById('confChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['True Negative', 'False Positive', 'False Negative', 'True Positive'],
+      datasets: [{
+        data: [7940, 44, 18, 430],
+        backgroundColor: ['rgba(16,185,129,0.5)','rgba(239,68,68,0.5)','rgba(245,158,11,0.5)','rgba(16,185,129,0.5)'],
+        borderColor: ['#10b981','#ef4444','#f59e0b','#10b981'],
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      responsive: true,
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // Feature importance
+  new Chart(document.getElementById('featureChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['Tutar', 'Zaman', 'V14', 'V4', 'Konum'],
+      datasets: [{
+        label: 'Önem',
+        data: [93, 75, 62, 55, 27],
+        backgroundColor: 'rgba(37,99,235,0.5)',
+        borderColor: '#2563eb',
+        borderWidth: 1,
+        borderRadius: 4,
+        indexAxis: 'y',
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      responsive: true,
+      indexAxis: 'y',
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+// ──────────────────────────────────────
+// 7. İŞLEMLER SAYFASI
+// ──────────────────────────────────────
+function buildFullTransactions() {
+  document.getElementById('tx-count').textContent = csvData.length;
+  document.getElementById('full-tx-body').innerHTML = csvData.map((row, i) => {
+    const isFraud = row.real === 1;
+    const predFraud = row.pred === 1;
+    return `<tr>
+      <td style="color:var(--text-muted);">${i + 1}</td>
+      <td style="font-weight:700;color:${isFraud ? 'var(--red-glow)' : 'var(--text-primary)'};">₺${row.amount.toLocaleString('tr-TR')}</td>
+      <td style="color:var(--text-secondary);">${row.time.toLocaleString('tr-TR')}</td>
+      <td style="color:var(--text-secondary);">${row.loc.toFixed(4)}</td>
+      <td>${predFraud ? '<span class="badge badge-fraud">FRAUD</span>' : '<span class="badge badge-safe">NORMAL</span>'}</td>
+      <td>${isFraud ? '<span class="badge badge-fraud">FRAUD</span>' : '<span class="badge badge-safe">NORMAL</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ──────────────────────────────────────
+// 8. TAHMİN MOTORU
+// ──────────────────────────────────────
+function computeRisk(amount, time, country, device, payment) {
+  let score = 0;
+
+  // Tutar riski
+  if (amount > 50000) score += 40;
+  else if (amount > 15000) score += 30;
+  else if (amount > 5000)  score += 15;
+  else score += 5;
+
+  // Ülke riski
+  const highRiskCountries = { RU:30, NG:28, CN:20, US:10, DE:5, TR:3 };
+  score += highRiskCountries[country] || 15;
+
+  // Zaman riski (gece = yüksek)
+  const hour = Math.floor((time % 86400) / 3600);
+  if (hour >= 0 && hour < 5) score += 20;
+  else if (hour >= 22)       score += 12;
+  else                        score += 2;
+
+  // Cihaz riski
+  const deviceRisk = { unknown:18, mobile:5, desktop:3, pos:2 };
+  score += deviceRisk[device] || 10;
+
+  // Ödeme yöntemi riski
+  const paymentRisk = { online:10, transfer:8, atm:5, pos:3 };
+  score += paymentRisk[payment] || 5;
+
+  return Math.min(99, Math.max(1, score));
+}
+
+// ──────────────────────────────────────
+// 8. GERÇEK TAHMİN MOTORU BAĞLANTISI (API CALL)
+// ──────────────────────────────────────
+function runPrediction() {
+  if (event) {
+        event.preventDefault(); // هذا السطر السحري هو الذي يمنع التحديث التلقائي!
+    }
+    
+    // ... هنا يبقى باقي كودك كما هو تماماً دون أي تغيير ...
+    const amount = parseFloat(document.getElementById('f-amount').value) || 0;
+    // ...
+  const timeInput  = document.getElementById('f-time').value || "00:00";
+  const timeParts  = timeInput.split(':');
+  const time       = (parseInt(timeParts[0]) * 3600) + (parseInt(timeParts[1]) * 60);
+  const country  = document.getElementById('f-country').value;
+  const device   = document.getElementById('f-device').value;
+  const payment  = document.getElementById('f-payment').value;
+
+  // إظهار شريط التحميل
+  const lb = document.getElementById('loading-bar');
+  const lf = document.getElementById('loading-fill');
+  lb.classList.add('active');
+  lf.style.width = '100%';
+
+  // إرسال البيانات إلى سيرفر بايثون (Flask API)
+  fetch('http://127.0.0.1:5000/predict', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      amount: amount,
+      time: time,
+      country: country,
+      device: device,
+      payment: payment
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    // إخفاء شريط التحميل
+    lb.classList.remove('active');
+    lf.style.width = '0%';
+
+    if (data.status === 'success') {
+      // عرض النتائج القادمة من الذكاء الاصطناعي
+      showRealResult(data.prediction, data.probability, amount, time, country, device, payment);
+    } else {
+      alert("API Hatası: " + data.message);
+    }
+  })
+  .catch(error => {
+    lb.classList.remove('active');
+    lf.style.width = '0%';
+    alert("Sunucu Bağlantı Hatası! Lütfen Python (app.py) sunucusunun çalıştığından emin olun.");
+    console.error("Error:", error);
+  });
+}
+
+// ──────────────────────────────────────
+// 8. TAHMİN MOTORU (AKILLI MANTIK - ESKİ SİSTEM)
+// ──────────────────────────────────────
+function computeRisk(amount, time, country, device, payment) {
+  let score = 0;
+  
+  // تحليل المبلغ
+  if (amount > 50000) score += 40;
+  else if (amount > 15000) score += 30;
+  else if (amount > 5000)  score += 15;
+  else score += 5;
+
+  // تحليل الدولة
+  const highRiskCountries = { RU:30, NG:28, CN:20, US:10, DE:5, TR:3 };
+  score += highRiskCountries[country] || 15;
+
+  // تحليل الوقت
+  const hour = Math.floor((time % 86400) / 3600);
+  if (hour >= 0 && hour < 5) score += 20;
+  else if (hour >= 22)       score += 12;
+  else                        score += 2;
+
+  // تحليل الجهاز
+  const deviceRisk = { unknown:18, mobile:5, desktop:3, pos:2 };
+  score += deviceRisk[device] || 10;
+
+  // تحليل وسيلة الدفع
+  const paymentRisk = { online:10, transfer:8, atm:5, pos:3 };
+  score += paymentRisk[payment] || 5;
+
+  return Math.min(99, Math.max(1, score));
+}
+
+function runPrediction() {
+  const amount   = parseFloat(document.getElementById('f-amount').value) || 0;
+  const time     = parseFloat(document.getElementById('f-time').value) || 0;
+  const country  = document.getElementById('f-country').value;
+  const device   = document.getElementById('f-device').value;
+  const payment  = document.getElementById('f-payment').value;
+
+  if (amount <= 0) {
+    alert("Lütfen geçerli bir işlem tutarı giriniz.");
+    return;
+  }
+
+  // حركة التحميل الجميلة
+  const lb = document.getElementById('loading-bar');
+  const lf = document.getElementById('loading-fill');
+  lb.classList.add('active');
+  lf.style.width = '0%';
+
+  setTimeout(() => { lf.style.width = '30%'; }, 50);
+  setTimeout(() => { lf.style.width = '65%'; }, 600);
+  setTimeout(() => { lf.style.width = '90%'; }, 1200);
+
+  setTimeout(() => {
+    lf.style.width = '100%';
+    setTimeout(() => {
+      lb.classList.remove('active');
+      lf.style.width = '0%';
+      showResult(amount, time, country, device, payment);
+    }, 300);
+  }, 1800);
+}
+
+function showResult(amount, time, country, device, payment) {
+  const risk = computeRisk(amount, time, country, device, payment);
+  const isFraud = risk >= 60;
+
+  const panel = document.getElementById('result-panel');
+  panel.className = 'result-panel show ' + (isFraud ? 'result-fraud' : 'result-safe');
+
+  document.getElementById('r-icon').textContent = isFraud ? '🚨' : '✅';
+  document.getElementById('r-title').textContent = isFraud ? 'FRAUD TESPİT EDİLDİ' : 'GÜVENLİ İŞLEM';
+  document.getElementById('r-title').style.color = isFraud ? 'var(--red-glow)' : 'var(--green-glow)';
+  document.getElementById('r-desc').textContent = isFraud
+    ? `Bu işlem %${risk} dolandırıcılık riski taşıyor. Kart bloke önerilir.`
+    : `Bu işlem %${risk} risk skoru ile güvenli görünüyor.`;
+
+  const badge = document.getElementById('r-badge');
+  badge.className = 'badge ' + (isFraud ? 'badge-fraud' : 'badge-safe');
+  badge.textContent = isFraud ? 'FRAUD' : 'GÜVENLİ';
+
+  document.getElementById('r-percent').textContent = `%${risk}`;
+
+  setTimeout(() => {
+    const fill = document.getElementById('r-meter');
+    fill.style.width = risk + '%';
+    fill.style.background = isFraud
+      ? 'linear-gradient(90deg,#b91c1c,#ef4444)'
+      : 'linear-gradient(90deg,#059669,#10b981)';
+  }, 100);
+
+  const amountLabel = amount > 15000 ? '🔴 Yüksek Risk' : amount > 5000 ? '🟡 Orta Risk' : '🟢 Düşük Risk';
+  const countryRisk = { RU:'🔴 Çok Yüksek', NG:'🔴 Çok Yüksek', CN:'🟡 Yüksek', US:'🟡 Orta', DE:'🟢 Düşük', TR:'🟢 Düşük' };
+  const hour = Math.floor((time % 86400) / 3600);
+  const timeLabel = (hour >= 0 && hour < 5) ? '🔴 Gece Yarısı' : hour >= 22 ? '🟡 Gece' : '🟢 Gündüz';
+  const deviceLabel = { unknown:'🔴 Bilinmiyor', mobile:'🟢 Mobil', desktop:'🟢 Masaüstü', pos:'🟢 POS' };
+  const paymentLabel = { online:'🟡 Online', transfer:'🟡 Havale', atm:'🟢 ATM', pos:'🟢 POS' };
+
+  document.getElementById('rf-amount').textContent  = amountLabel;
+  document.getElementById('rf-country').textContent = countryRisk[country] || '🟡 Orta';
+  document.getElementById('rf-time').textContent    = timeLabel;
+  document.getElementById('rf-device').textContent  = deviceLabel[device] || '🟡 Orta';
+  document.getElementById('rf-payment').textContent = paymentLabel[payment] || '🟡 Orta';
+  document.getElementById('rf-conf').textContent    = `%${Math.max(70, 99 - Math.abs(risk - (isFraud ? 80 : 20)))}`;
+
+  // ربط العملية بالجداول (İşlemler) لتبقى موجودة في لوحة التحكم
+  try {
+    const newId = "#TRX-" + Math.floor(1000 + Math.random() * 9000);
+    const txStatus = isFraud ? 'fraud' : (risk >= 40 ? 'review' : 'safe');
+    
+    transactions.unshift({
+      id: newId,
+      amount: amount,
+      country: country,
+      time: time + " sn",
+      risk: risk,
+      status: txStatus
+    });
+    
+    if(transactions.length > 7) transactions.pop();
+    buildTransactionsTable();
+
+    csvData.unshift({
+      amount: amount,
+      time: time,
+      loc: parseFloat((Math.random() * 0.9).toFixed(3)),
+      real: isFraud ? 1 : 0,
+      pred: isFraud ? 1 : 0
+    });
+    
+    buildFullTransactions();
+  } catch (err) {}
+}
+</script>
+</body>
+</html>
